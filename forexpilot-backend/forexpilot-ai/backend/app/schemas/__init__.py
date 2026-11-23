@@ -19,6 +19,8 @@ class RiskIn(BaseModel):
     closeOnStop: bool | None = None
     trailingEnabled: bool | None = None
     trailingAtrMult: float | None = Field(None, gt=0, le=10)
+    maxDailyTrades: int | None = Field(None, ge=1, le=100)
+    maxConsecutiveLosses: int | None = Field(None, ge=1, le=10)
 
 
 class BotSettingsIn(BaseModel):

@@ -6,7 +6,8 @@ from app.models import BotLog, BotSettings, Notification, RiskSettings, Trade
 
 RISK_MAP = {"perTrade": "risk_per_trade", "maxDaily": "max_daily_loss", "maxDD": "max_drawdown", "maxPos": "max_open_positions",
             "minRR": "min_risk_reward", "maxSpread": "max_spread_pips", "session": "session", "closeOnStop": "close_on_emergency",
-            "trailingEnabled": "trailing_enabled", "trailingAtrMult": "trailing_atr_mult"}
+            "trailingEnabled": "trailing_enabled", "trailingAtrMult": "trailing_atr_mult",
+             "maxDailyTrades": "max_daily_trades", "maxConsecutiveLosses": "max_consecutive_losses"}
 ENGINE_TIMEOUT = 30  # seconds without heartbeat => engine offline
 
 

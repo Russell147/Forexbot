@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 
 from config import settings
+from mt5.demo_guard import assert_demo
 from mt5.order_executor import _filling
 
 
@@ -9,6 +10,9 @@ def open_positions() -> list:
 
 
 def close_position(p, comment: str = "ForexPilot close") -> bool:
+    ok, _ = assert_demo()  # DEMO ONLY - no order of any kind outside a verified demo account
+    if not ok:
+        return False
     tick, info = mt5.symbol_info_tick(p.symbol), mt5.symbol_info(p.symbol)
     if not tick or not info:
         return False
@@ -22,6 +26,9 @@ def close_position(p, comment: str = "ForexPilot close") -> bool:
 
 def apply_trailing(p, atr_value: float, mult: float) -> bool:
     """Move SL toward price by mult*ATR, never loosening it and respecting the broker's stop level."""
+    ok, _ = assert_demo()  # DEMO ONLY - SLTP changes are orders too
+    if not ok:
+        return False
     tick, info = mt5.symbol_info_tick(p.symbol), mt5.symbol_info(p.symbol)
     if not tick or not info or atr_value <= 0:
         return False

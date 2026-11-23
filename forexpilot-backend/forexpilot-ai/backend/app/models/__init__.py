@@ -99,6 +99,8 @@ class RiskSettings(Base):
     trailing_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     trailing_atr_mult: Mapped[float] = mapped_column(Float, default=1.5)
     close_on_emergency: Mapped[bool] = mapped_column(Boolean, default=False)
+    max_daily_trades: Mapped[int] = mapped_column(Integer, default=10)
+    max_consecutive_losses: Mapped[int] = mapped_column(Integer, default=3)
 
 
 class Performance(Base):

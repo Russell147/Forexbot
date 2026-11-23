@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 
 from config import settings
+from mt5.demo_guard import assert_demo
 from mt5.market_data import bsym
 
 
@@ -14,7 +15,14 @@ def _filling(info) -> int:
 
 
 def send_market_order(symbol: str, side: str, volume: float, sl: float, tp: float, comment: str = "ForexPilot"):
-    """Returns (ok, message, position_ticket, fill_price). Dry-checks the order with order_check first."""
+    """Returns (ok, message, position_ticket, fill_price).
+
+    DEMO ONLY: re-verifies the connected account at order time, then dry-checks
+    the order with order_check before any order_send. No live account can pass.
+    """
+    ok, why = assert_demo()
+    if not ok:
+        return False, why, None, None
     s, info, tick = bsym(symbol), mt5.symbol_info(bsym(symbol)), mt5.symbol_info_tick(bsym(symbol))
     if not info or not tick:
         return False, "no symbol/tick data", None, None

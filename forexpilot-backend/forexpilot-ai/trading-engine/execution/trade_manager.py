@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import MetaTrader5 as mt5
 
 from ai.signal_validator import ai_review
@@ -27,8 +29,20 @@ def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_ope
     sl = round(entry - sig.sl_dist if buy else entry + sig.sl_dist, info.digits)
     tp = round(entry + sig.tp_dist if buy else entry - sig.tp_dist, info.digits)
     rr = abs(tp - entry) / abs(entry - sl) if entry != sl else 0
+    today = datetime.now(timezone.utc).date()
+    trades_today = sum(1 for t in db.query(Trade).all()
+                       if t.opened_at is not None and t.opened_at.date() == today)
+    loss_cap = max(1, int(getattr(risk, "max_consecutive_losses", 3) or 3))
+    closed = db.query(Trade).filter_by(status="CLOSED").order_by(Trade.closed_at.desc()).limit(loss_cap).all()
+    consecutive_losses = 0
+    for t in closed:
+        if (t.profit or 0) <= 0:
+            consecutive_losses += 1
+        else:
+            break
     why = check_new_trade(risk, open_count=open_positions, symbol_open=symbol_open, spread_pips=sp, rr=rr,
-                          equity=bot.equity, day_start=bot.day_start_equity, peak=bot.peak_equity)
+                          equity=bot.equity, day_start=bot.day_start_equity, peak=bot.peak_equity,
+                          trades_today=trades_today, consecutive_losses=consecutive_losses)
     vol = None
     if not why:
         vol, msg = lot_size(bot.equity, risk.risk_per_trade, entry, sl, info)

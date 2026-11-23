@@ -19,7 +19,8 @@ def limit_breach(risk, equity: float, day_start: float, peak: float) -> str | No
 
 
 def check_new_trade(risk, *, open_count: int, symbol_open: bool, spread_pips: float, rr: float,
-                    equity: float, day_start: float, peak: float, now: datetime | None = None) -> str | None:
+                    equity: float, day_start: float, peak: float, now: datetime | None = None,
+                    trades_today: int = 0, consecutive_losses: int = 0) -> str | None:
     """Return a rejection reason, or None if the trade may proceed."""
     if (b := limit_breach(risk, equity, day_start, peak)):
         return b
@@ -27,6 +28,11 @@ def check_new_trade(risk, *, open_count: int, symbol_open: bool, spread_pips: fl
         return "max open positions reached"
     if symbol_open:
         return "duplicate: position already open on this symbol"
+    if getattr(risk, "max_daily_trades", 0) and trades_today >= risk.max_daily_trades:
+        return f"daily trade limit reached ({trades_today}/{risk.max_daily_trades})"
+    loss_cap = getattr(risk, "max_consecutive_losses", 0)
+    if loss_cap and consecutive_losses >= loss_cap:
+        return f"repeated-loss protection: {consecutive_losses} consecutive losses (limit {loss_cap})"
     if spread_pips > risk.max_spread_pips:
         return f"spread {spread_pips:.1f}p above limit {risk.max_spread_pips}p"
     if rr + 1e-9 < risk.min_risk_reward:

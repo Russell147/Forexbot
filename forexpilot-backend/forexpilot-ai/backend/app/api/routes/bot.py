@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import BotLog, Notification, Strategy, Trade, TradingPair
+from app.models import BotLog, Notification, Strategy, Trade, TradingPair, TradingSignal
 from app.schemas import EmergencyIn
 from app.services.engine_status import get_engine_status
 from app.services.state import (add_log, add_notification, engine_online, get_bot, get_risk, iso, ser_risk, ser_trade)
@@ -13,7 +13,14 @@ router = APIRouter(tags=["bot"])
 def _status(db: Session) -> dict:
     b = get_bot(db)
     return {"desired": b.desired_state, "actual": b.actual_state, "engineOnline": engine_online(b), "mt5Connected": b.mt5_connected,
-            "heartbeat": iso(b.heartbeat), "run": b.actual_state == "running", "emg": b.desired_state == "emergency"}
+            "heartbeat": iso(b.heartbeat), "run": b.actual_state == "running", "emg": b.desired_state == "emergency",
+            "liveBlocked": b.actual_state == "blocked_live"}
+
+
+def _signals(db: Session) -> list[dict]:
+    rows = db.query(TradingSignal).order_by(TradingSignal.id.desc()).limit(60).all()
+    return [{"symbol": s.symbol, "strategy": s.strategy, "timeframe": s.timeframe, "direction": s.direction,
+             "status": s.status, "reason": s.reason, "time": iso(s.created_at)} for s in rows]
 
 
 @router.get("/bot/status")
@@ -86,4 +93,5 @@ def state(db: Session = Depends(get_db)):
             "risk": ser_risk(get_risk(db)), "tgm": b.telegram_enabled, "ai": b.ai_enabled,
             "strat": {s.name: {"on": s.enabled, "tf": s.timeframes.replace(",", ", ")} for s in db.query(Strategy).order_by(Strategy.id)},
             "on": {p.symbol: p.enabled for p in db.query(TradingPair).order_by(TradingPair.id)},
-            "logs": [{"t": iso(l.created_at), "m": l.message} for l in db.query(BotLog).order_by(BotLog.id.desc()).limit(80)]}
+            "logs": [{"t": iso(l.created_at), "m": l.message} for l in db.query(BotLog).order_by(BotLog.id.desc()).limit(80)],
+            "signals": _signals(db)}

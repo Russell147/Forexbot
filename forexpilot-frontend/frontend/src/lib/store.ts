@@ -1,7 +1,7 @@
 "use client";
 import { useSyncExternalStore } from "react";
 import type { LogEntry, Position, Risk, Strategy, Trade } from "@/types";
-import { api, type ApiAnalytics, type ApiState, type ApiTrade } from "@/services/api";
+import { api, type ApiAnalysis, type ApiAnalytics, type ApiSignal, type ApiState, type ApiTrade } from "@/services/api";
 
 export const SIMULATOR_MODE = process.env.NEXT_PUBLIC_USE_SIMULATOR !== "false";
 export const PAIRS: Record<string, number> = { EURUSD: 1.085, GBPUSD: 1.27, USDJPY: 150, USDCHF: 0.88, AUDUSD: 0.655, USDCAD: 1.36, NZDUSD: 0.6 };
@@ -32,11 +32,12 @@ export interface State {
   engineLastTick: string | null;
   accountLogin: number | null; accountType: string | null;
   accountEquity: number | null; dayStartEquity: number | null; analytics: Analytics | null;
+  analysis: Record<string, ApiAnalysis>; signals: ApiSignal[]; liveBlocked: boolean;
 }
 
 const DEFAULT_RISK: Risk = {
   perTrade: 0.5, maxDaily: 2, maxDD: 5, maxPos: 3, minRR: 2, maxSpread: 1.5,
-  closeOnStop: false, session: "All sessions",
+  closeOnStop: false, session: "All sessions", maxDailyTrades: 10, maxConsecutiveLosses: 3,
 };
 
 function initSimulator(): State {
@@ -50,6 +51,7 @@ function initSimulator(): State {
     loading: false, error: null, engineOnline: true, mt5Connected: true,
     conn: "connected", connMessage: null, engineAccount: { login: 10482, server: "Simulator", type: "demo" }, engineLastTick: null,
     accountLogin: 10482, accountType: "demo", accountEquity: null, dayStartEquity: null, analytics: null,
+    analysis: {}, signals: [], liveBlocked: false,
   };
   keys.forEach((k) => { s.hist[k] = [PAIRS[k]]; s.spread[k] = rnd(0.3, 1.2); });
   let b = 1000;
@@ -71,6 +73,7 @@ function initBackend(): State {
     loading: true, error: null, engineOnline: false, mt5Connected: false,
     conn: "connecting", connMessage: "Connecting to the trading engine...", engineAccount: null, engineLastTick: null,
     accountLogin: null, accountType: null, accountEquity: null, dayStartEquity: null, analytics: null,
+    analysis: {}, signals: [], liveBlocked: false,
   };
 }
 
@@ -109,6 +112,7 @@ function applyBackendState(state: ApiState, analytics: ApiAnalytics): void {
     peak: state.peak,
     pos: state.pos.map(toPosition),
     trades: state.trades.map(toTrade),
+    px: { ...S.px, ...Object.fromEntries(Object.entries(engine?.analysis ?? {}).map(([k, v]) => [k, v.price])) },
     eq: analytics.equityCurve.map((point) => point.equity),
     logs: state.logs.map((entry) => ({ t: entry.t ?? "", m: entry.m })),
     on: state.on,
@@ -127,6 +131,9 @@ function applyBackendState(state: ApiState, analytics: ApiAnalytics): void {
     accountType: state.account.type,
     accountEquity: state.equity,
     dayStartEquity: state.dayStartEquity,
+    liveBlocked: Boolean(state.liveBlocked),
+    analysis: engine?.analysis ?? {},
+    signals: state.signals ?? [],
     analytics: {
       trades: analytics.trades,
       winRate: analytics.winRate,

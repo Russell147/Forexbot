@@ -29,6 +29,8 @@ def _base(**changes) -> dict:
         "account": {},
         "live_trading_allowed": False,
         "trading_state": None,
+        "analysis": {},
+        "analysis_at": None,
     }
     data.update(changes)
     return data
@@ -55,6 +57,8 @@ def _interpret(payload: dict) -> dict:
         account=payload.get("account") or {},
         live_trading_allowed=bool(payload.get("live_trading_allowed")),
         trading_state=payload.get("trading_state"),
+        analysis=payload.get("analysis") or {},
+        analysis_at=payload.get("analysis_at"),
     )
 
 

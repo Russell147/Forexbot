@@ -18,6 +18,28 @@ export interface ApiTrade {
   time: string | null;
 }
 
+export interface ApiAnalysis {
+  symbol: string;
+  strategy: string;
+  timeframe: string;
+  signal: "BUY" | "SELL" | "HOLD";
+  reason: string;
+  emaFast: number;
+  emaSlow: number;
+  ema20: number;
+  ema50: number;
+  rsi: number;
+  macd: number;
+  macdSignal: number;
+  macdHist: number;
+  trend: string;
+  candle: string;
+  support: number;
+  resistance: number;
+  atr: number;
+  price: number;
+}
+
 export interface ApiEngine {
   state: "connected" | "disconnected" | "connecting" | "error";
   engine_online: boolean;
@@ -27,6 +49,18 @@ export interface ApiEngine {
   account: { login?: number; server?: string; type?: string; demo?: boolean };
   live_trading_allowed: boolean;
   trading_state?: string | null;
+  analysis?: Record<string, ApiAnalysis>;
+  analysis_at?: string | null;
+}
+
+export interface ApiSignal {
+  symbol: string;
+  strategy: string;
+  timeframe: string;
+  direction: string;
+  status: string;
+  reason: string;
+  time: string | null;
 }
 
 export interface ApiState {
@@ -34,6 +68,7 @@ export interface ApiState {
   emg: boolean;
   engineOnline: boolean;
   mt5Connected: boolean;
+  liveBlocked?: boolean;
   bal: number;
   equity: number;
   peak: number;
@@ -47,6 +82,7 @@ export interface ApiState {
   strat: Record<string, { on: boolean; tf: string }>;
   on: Record<string, boolean>;
   logs: { t: string | null; m: string }[];
+  signals?: ApiSignal[];
 }
 
 export interface ApiAnalytics {

@@ -37,6 +37,8 @@ live_blocked = False
 was_connected = False
 last_snap = 0.0
 last_retry = 0.0
+last_analysis = 0.0
+ANALYSIS_INTERVAL = 10.0  # seconds between read-only analysis refreshes
 
 # Published by the engine thread, read by the status HTTP thread. Never holds secrets.
 STATUS: dict = {
@@ -47,6 +49,8 @@ STATUS: dict = {
     "mt5_error": None,
     "account": {},
     "trading_state": "stopped",
+    "analysis": {},
+    "analysis_at": None,
 }
 STATUS_LOCK = threading.Lock()
 
@@ -86,6 +90,8 @@ def status_payload() -> dict:
         "uptime_seconds": round(now - snap["started_at"], 1),
         "trading_state": snap["trading_state"],
         "account": snap["account"],
+        "analysis": snap.get("analysis") or {},
+        "analysis_at": datetime.fromtimestamp(snap["analysis_at"], timezone.utc).isoformat() if snap.get("analysis_at") else None,
         "live_trading_allowed": settings.ALLOW_LIVE,
         "api": {"host": settings.ENGINE_API_HOST, "port": settings.ENGINE_API_PORT},
     }
@@ -132,6 +138,36 @@ def start_status_server() -> ThreadingHTTPServer | None:
     threading.Thread(target=server.serve_forever, name="engine-status", daemon=True).start()
     log.info("Engine status API listening on http://%s:%s/health", settings.ENGINE_API_HOST, settings.ENGINE_API_PORT)
     return server
+
+
+def publish_analysis(db, force: bool = False) -> None:
+    """Publish read-only technical analysis for every enabled pair.
+
+    Runs regardless of bot state so the dashboard always shows what the engine
+    sees. Uses the first enabled strategy's primary timeframe per pair.
+    """
+    global last_analysis
+    if not force and time.time() - last_analysis < ANALYSIS_INTERVAL:
+        return
+    last_analysis = time.time()
+    pairs = [p.symbol for p in db.query(TradingPair).filter_by(enabled=True)]
+    strats = db.query(Strategy).filter_by(enabled=True).all()
+    out: dict = {}
+    for sym in pairs:
+        md.ensure_symbol(sym)
+        for row in strats:
+            cls = REGISTRY.get(row.name)
+            if not cls:
+                continue
+            tf = cls.timeframes[0]
+            strat = cls(**(row.params or {}))
+            df = md.get_rates(sym, tf, 300)
+            if df is None or len(df) < strat.warmup + 5:
+                continue
+            sig = strat.evaluate(df.iloc[:-1])  # latest CLOSED candle only
+            out[sym] = {"symbol": sym, "strategy": row.name, "timeframe": tf, **sig.analysis()}
+            break
+    update_status(analysis=out, analysis_at=time.time())
 
 
 def scan(db, bot, risk) -> None:
@@ -216,6 +252,7 @@ def tick() -> None:
                 bot.day_start_date, bot.day_start_equity = today, a.equity
             bot.peak_equity = max(bot.peak_equity, a.equity)
             sync_positions(db, bot)
+            publish_analysis(db)  # read-only; feeds the dashboard even while stopped
             if time.time() - last_snap > 60:
                 last_snap = time.time()
                 snapshot(db, a.balance, a.equity)
