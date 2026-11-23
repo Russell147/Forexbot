@@ -96,7 +96,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-2">
             {Object.entries(s.strat).map(([k, v]) => <span key={k} className="rounded-full border border-slate-200 px-3 py-0.5 text-xs dark:border-slate-700">{v.on ? "● " : "○ "}{k}</span>)}
           </div>
-          <p className="mt-3 text-xs text-slate-500">Risk per trade {s.risk.perTrade}% · max {s.risk.maxPos} positions · max daily loss {s.risk.maxDaily}% · max spread {s.risk.maxSpread}p · max {s.risk.maxDailyTrades} trades/day · stop after {s.risk.maxConsecutiveLosses} losses.</p>
+          <p className="mt-3 text-xs text-slate-500">Lots: {s.risk.lotMode === "fixed" ? `fixed ${s.risk.fixedLot}` : `risk-based ${s.risk.perTrade}%`} · cap {s.risk.maxLotSize} · max {s.risk.maxPos} positions · max daily loss {s.risk.maxDaily}% · max spread {s.risk.maxSpread}p · max {s.risk.maxDailyTrades} trades/day · stop after {s.risk.maxConsecutiveLosses} losses.</p>
         </Card>
       </div>
     </>

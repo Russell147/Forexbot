@@ -45,7 +45,10 @@ def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_ope
                           trades_today=trades_today, consecutive_losses=consecutive_losses)
     vol = None
     if not why:
-        vol, msg = lot_size(bot.equity, risk.risk_per_trade, entry, sl, info)
+        mode = getattr(risk, "lot_mode", "risk")
+        fixed = float(getattr(risk, "fixed_lot", 0) or 0) if mode == "fixed" else 0.0
+        cap = float(getattr(risk, "max_lot_size", 0) or 0)
+        vol, msg = lot_size(bot.equity, risk.risk_per_trade, entry, sl, info, max_lot=cap, fixed_lot=fixed)
         why = None if vol else msg
     if not why:
         why = validate_order(info, sig.direction, vol, entry, sl, tp)

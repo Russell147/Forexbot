@@ -28,7 +28,13 @@ def _add_missing_columns() -> None:
     """
     from sqlalchemy import inspect, text
 
-    wanted = {"max_daily_trades": "INTEGER DEFAULT 10", "max_consecutive_losses": "INTEGER DEFAULT 3"}
+    wanted = {
+        "max_daily_trades": "INTEGER DEFAULT 10",
+        "max_consecutive_losses": "INTEGER DEFAULT 3",
+        "lot_mode": "VARCHAR(10) DEFAULT 'risk'",
+        "fixed_lot": "FLOAT DEFAULT 0.01",
+        "max_lot_size": "FLOAT DEFAULT 0.10",
+    }
     existing = {c["name"] for c in inspect(engine).get_columns("risk_settings")}
     with engine.begin() as conn:
         for name, ddl in wanted.items():

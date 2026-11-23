@@ -21,6 +21,9 @@ class RiskIn(BaseModel):
     trailingAtrMult: float | None = Field(None, gt=0, le=10)
     maxDailyTrades: int | None = Field(None, ge=1, le=100)
     maxConsecutiveLosses: int | None = Field(None, ge=1, le=10)
+    lotMode: Literal["risk", "fixed"] | None = None
+    fixedLot: float | None = Field(None, gt=0, le=100)
+    maxLotSize: float | None = Field(None, gt=0, le=100)
 
 
 class BotSettingsIn(BaseModel):

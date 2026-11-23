@@ -101,6 +101,9 @@ class RiskSettings(Base):
     close_on_emergency: Mapped[bool] = mapped_column(Boolean, default=False)
     max_daily_trades: Mapped[int] = mapped_column(Integer, default=10)
     max_consecutive_losses: Mapped[int] = mapped_column(Integer, default=3)
+    lot_mode: Mapped[str] = mapped_column(String(10), default="risk")  # risk | fixed
+    fixed_lot: Mapped[float] = mapped_column(Float, default=0.01)
+    max_lot_size: Mapped[float] = mapped_column(Float, default=0.10)
 
 
 class Performance(Base):

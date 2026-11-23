@@ -13,14 +13,28 @@ const input = "w-full max-w-xs rounded-lg border border-slate-300 bg-slate-50 px
 
 export default function RiskPage() {
   const { risk } = useBot();
+  const num = (k: NumKey, label: string, step: number, min: number, max: number) => (
+    <label key={k} className="mb-3 block">
+      <span className="mb-1 block text-xs text-slate-500">{label}</span>
+      <input className={input} type="number" min={min} max={max} step={step} value={risk[k]} onChange={(e) => actions.setRisk(k, Math.max(min, Math.min(max, parseFloat(e.target.value) || min)))} />
+    </label>
+  );
   return (
     <Card title="Risk management (mandatory)">
-      {FIELDS.map(([k, label, step, min, max]) => (
-        <label key={k} className="mb-3 block">
-          <span className="mb-1 block text-xs text-slate-500">{label}</span>
-          <input className={input} type="number" min={min} max={max} step={step} value={risk[k]} onChange={(e) => actions.setRisk(k, Math.max(min, Math.min(max, parseFloat(e.target.value) || min)))} />
+      {FIELDS.map(([k, label, step, min, max]) => num(k, label, step, min, max))}
+      <div className="mb-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+        <div className="mb-2 text-xs font-semibold">Position sizing</div>
+        <label className="mb-3 block">
+          <span className="mb-1 block text-xs text-slate-500">Lot sizing mode</span>
+          <select className={input} value={risk.lotMode} onChange={(e) => actions.setRisk("lotMode", e.target.value as Risk["lotMode"])}>
+            <option value="risk">Risk-based (risk % ÷ stop distance)</option>
+            <option value="fixed">Fixed lot (ignore risk %)</option>
+          </select>
         </label>
-      ))}
+        {num("fixedLot", "Fixed lot size (used when mode = fixed)", 0.01, 0.01, 100)}
+        {num("maxLotSize", "Maximum lot size per trade (applies in both modes)", 0.01, 0.01, 100)}
+        <p className="text-xs text-slate-500">Default cap is 0.10 lots. In risk mode the engine computes a size from your risk % and stop distance, then caps it here. Set the cap slightly above your broker minimum to trade small.</p>
+      </div>
       <label className="mb-3 block">
         <span className="mb-1 block text-xs text-slate-500">Trading session</span>
         <select className={input} value={risk.session} onChange={(e) => actions.setRisk("session", e.target.value)}>
