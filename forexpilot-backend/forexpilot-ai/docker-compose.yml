@@ -1,0 +1,24 @@
+# Runs PostgreSQL + the API. The trading engine is NOT containerised: it must run on Windows next to MetaTrader 5.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: forexpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: forexpilot
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]   # remove, or firewall to the engine's IP, in production
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forexpilot"]
+      interval: 5s
+      retries: 10
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://forexpilot:${POSTGRES_PASSWORD}@db:5432/forexpilot
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+volumes:
+  pgdata:
