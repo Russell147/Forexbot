@@ -121,12 +121,12 @@ class EmaRsiStrategy:
         if up and p["rsi_buy"][0] <= r <= p["rsi_buy"][1]:
             if self._confirms("BUY", mh, trend, candle.bias):
                 reason = f"EMA cross up, RSI {r:.0f}, {trend}, {candle.reason}, MACD hist {mh:+.5f}"
-                return Signal("BUY", reason, sl, tp, a, r, **base)
+                return Signal("BUY", reason, sl, tp, **base)
             return Signal(None, f"BUY cross unconfirmed ({trend}, {candle.reason}, MACD hist {mh:+.5f})", **base)
         if dn and p["rsi_sell"][0] <= r <= p["rsi_sell"][1]:
             if self._confirms("SELL", mh, trend, candle.bias):
                 reason = f"EMA cross down, RSI {r:.0f}, {trend}, {candle.reason}, MACD hist {mh:+.5f}"
-                return Signal("SELL", reason, sl, tp, a, r, **base)
+                return Signal("SELL", reason, sl, tp, **base)
             return Signal(None, f"SELL cross unconfirmed ({trend}, {candle.reason}, MACD hist {mh:+.5f})", **base)
         return Signal(None, f"no confirmed cross ({trend}, RSI {r:.0f})", **base)
 
