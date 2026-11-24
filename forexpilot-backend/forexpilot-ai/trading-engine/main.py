@@ -18,6 +18,7 @@ from config import settings  # noqa: F401  (loads .env, adjusts sys.path)
 import MetaTrader5 as mt5
 from app.core.database import SessionLocal, init_db
 from app.models import BotSettings, RiskSettings, Strategy, TradingPair
+from execution.exit_manager import manage_exits
 from execution.trade_manager import try_trade
 from indicators.atr import atr
 from monitoring.health_monitor import add_log, notify
@@ -205,7 +206,8 @@ def scan(db, bot, risk) -> None:
             add_log(db, f"WAIT {sym}: strategies give conflicting signals")
             continue
         name, tf, sig, df = found[0]
-        if try_trade(db, bot, risk, sym, name, tf, sig, df, len(live), sym in open_syms):
+        if try_trade(db, bot, risk, sym, name, tf, sig, df, len(live), sym in open_syms,
+                     [md.base_symbol(p.symbol) for p in live]):
             live, open_syms = open_positions(), open_syms | {sym}
 
 
@@ -272,6 +274,7 @@ def tick() -> None:
                 db.commit()
                 return
             manage_trailing(risk)
+            manage_exits(db, bot, risk)  # protective exits run even while stopped
             if bot.desired_state != "running":
                 bot.actual_state = "stopped"
                 last_candle.clear()  # so a restart never trades on a stale candle

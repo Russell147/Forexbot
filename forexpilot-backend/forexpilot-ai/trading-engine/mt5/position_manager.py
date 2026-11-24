@@ -1,27 +1,54 @@
+import logging
+
 import MetaTrader5 as mt5
 
 from config import settings
 from mt5.demo_guard import assert_demo
 from mt5.order_executor import _filling
 
+log = logging.getLogger("mt5.positions")
+
 
 def open_positions() -> list:
     return [p for p in (mt5.positions_get() or []) if p.magic == settings.MAGIC]
 
 
-def close_position(p, comment: str = "ForexPilot close") -> bool:
+def close_position(p, comment: str = "ForexPilot close", volume: float | None = None) -> bool:
     ok, _ = assert_demo()  # DEMO ONLY - no order of any kind outside a verified demo account
     if not ok:
         return False
     tick, info = mt5.symbol_info_tick(p.symbol), mt5.symbol_info(p.symbol)
     if not tick or not info:
         return False
+    vol = float(volume) if volume else float(p.volume)
+    vol = min(vol, float(p.volume))
+    if info.volume_step > 0:
+        vol = round(int(vol / info.volume_step + 1e-9) * info.volume_step, 8)
+    if vol < info.volume_min:
+        return False
     buy = p.type == mt5.POSITION_TYPE_BUY
-    res = mt5.order_send({"action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume, "position": p.ticket,
+    res = mt5.order_send({"action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": vol, "position": p.ticket,
                           "type": mt5.ORDER_TYPE_SELL if buy else mt5.ORDER_TYPE_BUY, "price": tick.bid if buy else tick.ask,
                           "deviation": settings.DEVIATION, "magic": settings.MAGIC, "comment": comment[:31],
                           "type_time": mt5.ORDER_TIME_GTC, "type_filling": _filling(info)})
     return bool(res and res.retcode == mt5.TRADE_RETCODE_DONE)
+
+
+def set_stop_loss(p, sl: float, comment: str = "ForexPilot BE") -> bool:
+    """Modify a position's stop loss in place. DEMO ONLY."""
+    ok, _ = assert_demo()
+    if not ok:
+        return False
+    info = mt5.symbol_info(p.symbol)
+    if not info:
+        return False
+    req = {"action": mt5.TRADE_ACTION_SLTP, "symbol": p.symbol, "position": p.ticket,
+           "sl": round(float(sl), info.digits), "tp": p.tp}
+    res = mt5.order_send(req)
+    done = bool(res and res.retcode == mt5.TRADE_RETCODE_DONE)
+    if done:
+        log.info("Modified SL for %s to %s (%s)", p.symbol, req["sl"], comment)
+    return done
 
 
 def apply_trailing(p, atr_value: float, mult: float) -> bool:

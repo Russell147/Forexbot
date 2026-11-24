@@ -82,6 +82,8 @@ class Trade(Base):
     status: Mapped[str] = mapped_column(String(8), default="OPEN", index=True)
     strategy: Mapped[str] = mapped_column(String(50), default="")
     close_reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    initial_stop: Mapped[float | None] = mapped_column(Float, nullable=True)  # stop at entry; defines 1R for exits
+    partial_done: Mapped[bool] = mapped_column(Boolean, default=False)
     opened_at: Mapped[datetime] = mapped_column(DT, default=utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DT, nullable=True)
 
@@ -104,6 +106,11 @@ class RiskSettings(Base):
     lot_mode: Mapped[str] = mapped_column(String(10), default="risk")  # risk | fixed
     fixed_lot: Mapped[float] = mapped_column(Float, default=0.01)
     max_lot_size: Mapped[float] = mapped_column(Float, default=0.10)
+    break_even_after_r: Mapped[float] = mapped_column(Float, default=1.0)
+    partial_tp_r: Mapped[float] = mapped_column(Float, default=0.0)
+    partial_tp_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    max_hold_hours: Mapped[float] = mapped_column(Float, default=0.0)
+    max_currency_exposure: Mapped[int] = mapped_column(Integer, default=2)
 
 
 class Performance(Base):

@@ -34,12 +34,26 @@ def _add_missing_columns() -> None:
         "lot_mode": "VARCHAR(10) DEFAULT 'risk'",
         "fixed_lot": "FLOAT DEFAULT 0.01",
         "max_lot_size": "FLOAT DEFAULT 0.10",
+        "break_even_after_r": "FLOAT DEFAULT 1.0",
+        "partial_tp_r": "FLOAT DEFAULT 0.0",
+        "partial_tp_pct": "FLOAT DEFAULT 0.0",
+        "max_hold_hours": "FLOAT DEFAULT 0.0",
+        "max_currency_exposure": "INTEGER DEFAULT 2",
     }
-    existing = {c["name"] for c in inspect(engine).get_columns("risk_settings")}
+    trade_wanted = {
+        "initial_stop": "FLOAT",
+        "partial_done": "BOOLEAN DEFAULT 0",
+    }
+    inspector = inspect(engine)
+    existing = {c["name"] for c in inspector.get_columns("risk_settings")}
+    trade_existing = {c["name"] for c in inspector.get_columns("trades")}
     with engine.begin() as conn:
         for name, ddl in wanted.items():
             if name not in existing:
                 conn.execute(text(f"ALTER TABLE risk_settings ADD COLUMN {name} {ddl}"))
+        for name, ddl in trade_wanted.items():
+            if name not in trade_existing:
+                conn.execute(text(f"ALTER TABLE trades ADD COLUMN {name} {ddl}"))
 
 
 def init_db() -> None:

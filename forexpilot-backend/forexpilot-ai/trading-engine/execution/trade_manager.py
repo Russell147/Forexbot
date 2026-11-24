@@ -17,7 +17,7 @@ def _record(db, sym, strat, tf, sig, status, reason, ai_note=""):
     db.add(TradingSignal(symbol=sym, strategy=strat, timeframe=tf, direction=sig.direction, status=status, reason=reason[:500], ai_note=ai_note))
 
 
-def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_open) -> bool:
+def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_open, open_symbols=None) -> bool:
     info = ensure_symbol(sym)
     tick = mt5.symbol_info_tick(bsym(sym))
     sp = spread_pips(sym)
@@ -42,7 +42,8 @@ def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_ope
             break
     why = check_new_trade(risk, open_count=open_positions, symbol_open=symbol_open, spread_pips=sp, rr=rr,
                           equity=bot.equity, day_start=bot.day_start_equity, peak=bot.peak_equity,
-                          trades_today=trades_today, consecutive_losses=consecutive_losses)
+                          trades_today=trades_today, consecutive_losses=consecutive_losses,
+                          symbol=sym, open_symbols=open_symbols or [])
     vol = None
     if not why:
         mode = getattr(risk, "lot_mode", "risk")
@@ -65,7 +66,8 @@ def try_trade(db, bot, risk, sym, strat, tf, sig, df, open_positions, symbol_ope
         _record(db, sym, strat, tf, sig, "REJECTED", msg, ai_note)
         add_log(db, f"Order rejected {sym}: {msg}", "error")
         return False
-    db.add(Trade(ticket=ticket, symbol=sym, type=sig.direction, volume=vol, entry_price=fill or entry, stop_loss=sl, take_profit=tp, strategy=strat))
+    db.add(Trade(ticket=ticket, symbol=sym, type=sig.direction, volume=vol, entry_price=fill or entry,
+                 stop_loss=sl, take_profit=tp, initial_stop=sl, strategy=strat))
     _record(db, sym, strat, tf, sig, "EXECUTED", sig.reason, ai_note)
     text = f"Opened {sig.direction} {sym} {vol} lot @ {fill or entry} SL {sl} TP {tp} [{strat} {tf}]"
     add_log(db, text)

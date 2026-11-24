@@ -39,6 +39,7 @@ const DEFAULT_RISK: Risk = {
   perTrade: 0.5, maxDaily: 2, maxDD: 5, maxPos: 3, minRR: 2, maxSpread: 1.5,
   closeOnStop: false, session: "All sessions", maxDailyTrades: 10, maxConsecutiveLosses: 3,
   lotMode: "risk", fixedLot: 0.01, maxLotSize: 0.10,
+  breakEvenAfterR: 1.0, partialTpR: 0, partialTpPct: 0, maxHoldHours: 0, maxCurrencyExposure: 2,
 };
 
 function initSimulator(): State {

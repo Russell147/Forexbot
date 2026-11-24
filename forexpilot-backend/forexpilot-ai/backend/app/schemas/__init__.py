@@ -24,6 +24,11 @@ class RiskIn(BaseModel):
     lotMode: Literal["risk", "fixed"] | None = None
     fixedLot: float | None = Field(None, gt=0, le=100)
     maxLotSize: float | None = Field(None, gt=0, le=100)
+    breakEvenAfterR: float | None = Field(None, ge=0, le=10)
+    partialTpR: float | None = Field(None, ge=0, le=10)
+    partialTpPct: float | None = Field(None, ge=0, le=100)
+    maxHoldHours: float | None = Field(None, ge=0, le=720)
+    maxCurrencyExposure: int | None = Field(None, ge=0, le=10)
 
 
 class BotSettingsIn(BaseModel):

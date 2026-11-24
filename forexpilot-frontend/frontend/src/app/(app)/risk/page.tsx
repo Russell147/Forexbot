@@ -35,6 +35,19 @@ export default function RiskPage() {
         {num("maxLotSize", "Maximum lot size per trade (applies in both modes)", 0.01, 0.01, 100)}
         <p className="text-xs text-slate-500">Default cap is 0.10 lots. In risk mode the engine computes a size from your risk % and stop distance, then caps it here. Set the cap slightly above your broker minimum to trade small.</p>
       </div>
+      <div className="mb-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+        <div className="mb-2 text-xs font-semibold">Trade exits</div>
+        {num("breakEvenAfterR", "Move SL to break-even after (1R = initial stop distance)", 0.1, 0, 10)}
+        {num("partialTpR", "Partial close at (R, 0 = off)", 0.1, 0, 10)}
+        {num("partialTpPct", "Partial close size (% of position)", 5, 0, 100)}
+        {num("maxHoldHours", "Maximum hold time in hours (0 = off)", 1, 0, 720)}
+        <p className="text-xs text-slate-500">Break-even and partial TP use the initial stop to define 1R. Broker stop-distance rules are respected when moving a stop.</p>
+      </div>
+      <div className="mb-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+        <div className="mb-2 text-xs font-semibold">Correlation / exposure</div>
+        {num("maxCurrencyExposure", "Max open positions touching one currency (0 = off)", 1, 0, 10)}
+        <p className="text-xs text-slate-500">Blocks a new trade if it would push any currency past the limit, so three USD pairs cannot open at once. Default is 2.</p>
+      </div>
       <label className="mb-3 block">
         <span className="mb-1 block text-xs text-slate-500">Trading session</span>
         <select className={input} value={risk.session} onChange={(e) => actions.setRisk("session", e.target.value)}>

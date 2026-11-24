@@ -8,7 +8,10 @@ RISK_MAP = {"perTrade": "risk_per_trade", "maxDaily": "max_daily_loss", "maxDD":
             "minRR": "min_risk_reward", "maxSpread": "max_spread_pips", "session": "session", "closeOnStop": "close_on_emergency",
             "trailingEnabled": "trailing_enabled", "trailingAtrMult": "trailing_atr_mult",
              "maxDailyTrades": "max_daily_trades", "maxConsecutiveLosses": "max_consecutive_losses",
-             "lotMode": "lot_mode", "fixedLot": "fixed_lot", "maxLotSize": "max_lot_size"}
+             "lotMode": "lot_mode", "fixedLot": "fixed_lot", "maxLotSize": "max_lot_size",
+              "breakEvenAfterR": "break_even_after_r", "partialTpR": "partial_tp_r",
+              "partialTpPct": "partial_tp_pct", "maxHoldHours": "max_hold_hours",
+              "maxCurrencyExposure": "max_currency_exposure"}
 ENGINE_TIMEOUT = 30  # seconds without heartbeat => engine offline
 
 

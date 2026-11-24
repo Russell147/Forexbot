@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from risk.correlation import check_correlation
 from risk.drawdown_control import daily_loss_pct, drawdown_pct
 
 SESSIONS = {"All sessions": (0, 24), "London": (7, 16), "New York": (12, 21), "London + New York": (7, 21)}  # UTC hours
@@ -20,7 +21,8 @@ def limit_breach(risk, equity: float, day_start: float, peak: float) -> str | No
 
 def check_new_trade(risk, *, open_count: int, symbol_open: bool, spread_pips: float, rr: float,
                     equity: float, day_start: float, peak: float, now: datetime | None = None,
-                    trades_today: int = 0, consecutive_losses: int = 0) -> str | None:
+                    trades_today: int = 0, consecutive_losses: int = 0,
+                    symbol: str = "", open_symbols: list[str] | None = None) -> str | None:
     """Return a rejection reason, or None if the trade may proceed."""
     if (b := limit_breach(risk, equity, day_start, peak)):
         return b
@@ -28,6 +30,9 @@ def check_new_trade(risk, *, open_count: int, symbol_open: bool, spread_pips: fl
         return "max open positions reached"
     if symbol_open:
         return "duplicate: position already open on this symbol"
+    exposure = int(getattr(risk, "max_currency_exposure", 0) or 0)
+    if (c := check_correlation(symbol, open_symbols or [], exposure)):
+        return c
     if getattr(risk, "max_daily_trades", 0) and trades_today >= risk.max_daily_trades:
         return f"daily trade limit reached ({trades_today}/{risk.max_daily_trades})"
     loss_cap = getattr(risk, "max_consecutive_losses", 0)
